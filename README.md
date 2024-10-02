@@ -1,0 +1,1 @@
+This program is run on streamlit and purpose of the program is to run a search using keywords and optional MeSH word. The output is in excel format that can be downloaded. In addition the program also does datamining on abstracts downloaded and check for any disease names occuring in the abstracts and provides the output in form of a barch chart to show frequency. 
