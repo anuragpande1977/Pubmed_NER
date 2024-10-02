@@ -1,8 +1,9 @@
 biopython
 pandas
-streamlit
+streamlit==1.25.0  # Or the latest stable version
 matplotlib
 plotly
 scispacy
 spacy
 openpyxl
+
