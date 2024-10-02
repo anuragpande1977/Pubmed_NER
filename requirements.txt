@@ -1,0 +1,8 @@
+biopython
+pandas
+streamlit
+matplotlib
+plotly
+scispacy
+spacy
+openpyxl
