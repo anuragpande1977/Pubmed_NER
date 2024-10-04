@@ -90,6 +90,8 @@ nest-asyncio==1.6.0
 networkx==2.6.3
 nmslib==2.1.1
 numpy>=1.26.0
+numpy>=1.26.0
+pyarrow==13.0.0
 
 oauthlib==3.2.2
 openai==0.28.0
