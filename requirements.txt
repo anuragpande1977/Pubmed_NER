@@ -36,10 +36,6 @@ datasets==2.13.2
 decorator==5.1.1
 dill==0.3.6
 distro==1.9.0
-en-core-sci-lg @ https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_lg-0.4.0.tar.gz#sha256=e74856f331229be751cb3df4e0cde41f1fdc45de35088d037fc9b8634550e85d
-en-core-sci-sm @ https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_sm-0.4.0.tar.gz#sha256=ce30c9c97a4a6ab1f296d84cf587da6b1e3e867b53c17f2197e8f422de69b899
-en-core-web-lg @ https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.0.0/en_core_web_lg-3.0.0-py3-none-any.whl#sha256=ad2cd3ed1c0403a89cafcf0ea0ec1e2e05182f7073c0c931b02fe789e44a19b0
-en-ner-bc5cdr-md @ https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.2.4/en_ner_bc5cdr_md-0.2.4.tar.gz#sha256=b58c5fc20121db61ce81d321671ff8da55a1c8b40b6095f52f213f17b8b7b300
 et-xmlfile==1.1.0
 exceptiongroup==1.2.2
 filelock==3.12.2
@@ -180,3 +176,9 @@ wrapt==1.16.0
 xxhash==3.4.1
 yarl==1.9.4
 zipp==3.15.0
+
+# SciSpacy models
+en-core-sci-lg @ https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_lg-0.4.0.tar.gz#sha256=e74856f331229be751cb3df4e0cde41f1fdc45de35088d037fc9b8634550e85d
+en-core-sci-sm @ https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_sm-0.4.0.tar.gz#sha256=ce30c9c97a4a6ab1f296d84cf587da6b1e3e867b53c17f2197e8f422de69b899
+en-core-web-lg @ https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.0.0/en_core_web_lg-3.0.0-py3-none-any.whl#sha256=ad2cd3ed1c0403a89cafcf0ea0ec1e2e05182f7073c0c931b02fe789e44a19b0
+en-ner-bc5cdr-md @ https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.2.4/en_ner_bc5cdr_md-0.2.4.tar
