@@ -1,0 +1,31 @@
+name: Streamlit App Deploy
+
+on:
+  push:
+    branches:
+      - main  # The branch that will trigger the action
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest  # Choose the runner (Ubuntu in this case)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2  # Check out the repository code
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'  # Ensure you're using Python 3.12 or another version if needed
+
+      - name: Install required system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3.12-distutils  # Install distutils for Python 3.12
+          pip install --upgrade pip setuptools  # Upgrade pip and setuptools
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt  # Install Python dependencies
+
+      - name: Deploy Streamlit App
+        run: streamlit run app.py  # Replace with your Streamlit app entry point
