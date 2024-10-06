@@ -31,5 +31,3 @@ aiohttp>=3.7.0
 
 # Optional but recommended: Ensure pip is up-to-date
 pip>=24.2
-
-
