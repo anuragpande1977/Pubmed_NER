@@ -4,6 +4,7 @@ streamlit>=1.10.0
 numpy>=1.26.0
 pyarrow>=13.0.0
 biopython>=1.78
+scipy>=1.10.0  # Add pre-built version of SciPy to avoid Fortran compilation
 scispacy>=0.5.0
 spacy>=3.0.0
 matplotlib>=3.5.0
