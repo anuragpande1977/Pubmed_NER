@@ -16,12 +16,10 @@ def load_huggingface_model():
 
 ner_model = load_huggingface_model()
 
-# Extract entities and filter disease-related terms
+# Extract disease-related entities from text
 def extract_entities(text):
     entities = ner_model(text)
-    st.write("NER Output Debug:", entities)  # Print NER output for verification
-
-    # Collect terms labeled with 'DISEASE', 'B-DISEASE', or 'I-DISEASE'
+    # Collect terms labeled as 'DISEASE' or related
     extracted_terms = [
         entity['word'] for entity in entities 
         if any(label in entity['entity'] for label in ['DISEASE', 'B-DISEASE', 'I-DISEASE'])
