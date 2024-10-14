@@ -3,3 +3,4 @@ pandas
 biopython
 spacy
 openpyxl
+matplotlib
