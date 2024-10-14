@@ -10,23 +10,21 @@ from plotly.subplots import make_subplots
 import spacy
 from collections import Counter
 
-# Function to install the SciSpacy model if it's not available
+# Function to install and load the SciSpacy model dynamically
 def load_model():
     try:
-        nlp = spacy.load("en_ner_bc5cdr_md")
+        nlp = spacy.load("en_core_sci_sm")
     except OSError:
         st.warning("SciSpacy model not found. Installing it now...")
-        subprocess.run([
-            "pip", "install",
-            "https://github.com/allenai/scispacy-models/releases/download/en_core_sci_sm-0.5.0/en_core_sci_sm-0.5.0.tar.gz"
-        ])
-        nlp = spacy.load("en_core_sci_sm")  # Use an alternative model
+        subprocess.run(["pip", "install", "en-core-sci-sm"])
+        spacy.cli.download("en_core_sci_sm")  # Download the model
+        nlp = spacy.load("en_core_sci_sm")
     return nlp
 
-# Load the SciSpacy model
+# Load the model
 nlp = load_model()
 
-# Define PubMed article types and search tags
+# Define PubMed article types and their corresponding search tags
 article_types = {
     "Clinical Trials": "Clinical Trial[pt]",
     "Meta-Analysis": "Meta-Analysis[pt]",
@@ -109,7 +107,7 @@ def plot_publication_years_pie_chart(year_count):
         fig.update_layout(title="Distribution of Articles by Publication Year", title_x=0.5)
         st.plotly_chart(fig)
 
-# Extract disease terms from abstracts using SciSpacy
+# Extract disease terms from abstracts
 def extract_disease_terms(abstract_text):
     doc = nlp(abstract_text)
     return [ent.text for ent in doc.ents if ent.label_ == "DISEASE"]
