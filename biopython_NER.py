@@ -16,8 +16,7 @@ def load_model():
         nlp = spacy.load("en_core_sci_sm")
     except OSError:
         st.warning("SciSpacy model not found. Installing it now...")
-        subprocess.run(["pip", "install", "en-core-sci-sm"])
-        spacy.cli.download("en_core_sci_sm")  # Download the model
+        subprocess.run(["python", "-m", "spacy", "download", "en_core_sci_sm"])
         nlp = spacy.load("en_core_sci_sm")
     return nlp
 
