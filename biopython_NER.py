@@ -8,7 +8,7 @@ from collections import Counter
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 
 # Load Hugging Face model for biomedical NER
-@st.cache_resource  # Cache the model to avoid reloading on every run
+@st.cache_resource
 def load_huggingface_model():
     tokenizer = AutoTokenizer.from_pretrained("d4data/biomedical-ner-all")
     model = AutoModelForTokenClassification.from_pretrained("d4data/biomedical-ner-all")
@@ -16,11 +16,11 @@ def load_huggingface_model():
 
 ner_model = load_huggingface_model()
 
-# Extract disease terms using Hugging Face NER model
-def extract_disease_terms(text):
+# Function to extract and print all entities for debugging
+def extract_entities(text):
     entities = ner_model(text)
-    disease_terms = [entity['word'] for entity in entities if 'DISEASE' in entity['entity']]
-    return disease_terms
+    st.write("Debug: NER Output", entities)  # Print all detected entities
+    return [entity['word'] for entity in entities]
 
 # Define article types for PubMed search
 article_types = {
@@ -33,7 +33,7 @@ article_types = {
     "Observational Studies": "Observational Study[pt]",
 }
 
-# Construct query for PubMed API
+# PubMed query construction
 def construct_query(search_term, mesh_term, article_type):
     query = f"({search_term}) AND {article_types[article_type]}"
     if mesh_term:
@@ -58,6 +58,7 @@ def fetch_abstracts(query, num_articles, email):
         articles = list(records)
         handle.close()
         return articles
+
     except Exception as e:
         st.write(f"An error occurred: {e}")
         return []
@@ -81,7 +82,7 @@ def save_to_excel(articles):
     output.seek(0)
     return output
 
-# Plot disease frequency bar chart
+# Plot disease frequency
 def plot_disease_frequency(disease_list):
     if disease_list:
         disease_freq = Counter(disease_list)
@@ -100,7 +101,7 @@ def plot_disease_frequency(disease_list):
         st.write("No disease terms found.")
 
 # Streamlit UI
-st.title("PubMed NER Search and Disease Term Frequency")
+st.title("PubMed Biomedical NER Search and Disease Term Frequency")
 
 email = st.text_input("Enter your email for PubMed access:")
 search_term = st.text_input("Enter the search term:")
@@ -124,20 +125,20 @@ if st.button("Search"):
             )
 
             # Extract and display disease terms
-            st.write("### Extracted Disease Terms from Abstracts:")
-            all_disease_terms = []
+            st.write("### Extracted Entities from Abstracts:")
+            all_entities = []
             for article in articles:
                 abstract = article.get('AB', '')
-                disease_terms = extract_disease_terms(abstract)
-                if disease_terms:
+                entities = extract_entities(abstract)
+                if entities:
                     st.write(f"Title: {article.get('TI', 'No Title')}")
-                    st.write(f"Disease Terms: {', '.join(disease_terms)}")
-                    all_disease_terms.extend(disease_terms)
+                    st.write(f"Entities: {', '.join(entities)}")
+                    all_entities.extend(entities)
 
             # Plot disease term frequency
-            if all_disease_terms:
+            if all_entities:
                 st.write("### Disease Term Frequency:")
-                plot_disease_frequency(all_disease_terms)
+                plot_disease_frequency(all_entities)
         else:
             st.write("No articles found.")
     else:
