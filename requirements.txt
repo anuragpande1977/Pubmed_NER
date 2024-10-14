@@ -4,5 +4,4 @@ biopython
 matplotlib
 plotly
 spacy
-en-core-sci-sm
 openpyxl
