@@ -4,3 +4,4 @@ biopython
 spacy
 openpyxl
 matplotlib
+plotly
