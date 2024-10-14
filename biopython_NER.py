@@ -16,10 +16,16 @@ def load_huggingface_model():
 
 ner_model = load_huggingface_model()
 
-# Extract disease-related entities from text
+# Extract entities and filter disease-related terms
 def extract_entities(text):
     entities = ner_model(text)
-    extracted_terms = [entity['word'] for entity in entities if 'DISEASE' in entity['entity']]
+    st.write("NER Output Debug:", entities)  # Print NER output for verification
+
+    # Collect terms labeled with 'DISEASE', 'B-DISEASE', or 'I-DISEASE'
+    extracted_terms = [
+        entity['word'] for entity in entities 
+        if any(label in entity['entity'] for label in ['DISEASE', 'B-DISEASE', 'I-DISEASE'])
+    ]
     return extracted_terms
 
 # Define article types for PubMed search
@@ -141,4 +147,3 @@ if st.button("Search"):
             st.write("No articles found.")
     else:
         st.write("Please provide both email and search term.")
-
