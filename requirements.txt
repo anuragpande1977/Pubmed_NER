@@ -1,8 +1,5 @@
 streamlit
 pandas
 biopython
-matplotlib
-plotly
-transformers
-torch
+spacy
 openpyxl
