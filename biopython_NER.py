@@ -6,21 +6,34 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 from collections import Counter
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
+import torch
 
-# Load Hugging Face model (SciBERT) for biomedical NER
+# Load Hugging Face SciBERT model with caching and device compatibility
 @st.cache_resource
 def load_huggingface_model():
+    device = 0 if torch.cuda.is_available() else -1  # Use GPU if available, otherwise CPU
     tokenizer = AutoTokenizer.from_pretrained("allenai/scibert_scivocab_uncased")
     model = AutoModelForTokenClassification.from_pretrained("allenai/scibert_scivocab_uncased")
-    return pipeline("ner", model=model, tokenizer=tokenizer)
+    return pipeline("ner", model=model, tokenizer=tokenizer, device=device)
 
 ner_model = load_huggingface_model()
 
-# Extract entities from text using the NER model
+# Truncate text to fit within token limit (512 tokens)
+def truncate_text(text, max_tokens=512):
+    tokens = text.split()
+    if len(tokens) > max_tokens:
+        return ' '.join(tokens[:max_tokens])
+    return text
+
+# Extract biomedical entities from text using the Hugging Face model
 def extract_entities(text):
-    entities = ner_model(text)
-    extracted_terms = [entity['word'] for entity in entities]
-    return extracted_terms
+    try:
+        truncated_text = truncate_text(text)
+        entities = ner_model(truncated_text)
+        return [entity['word'] for entity in entities]
+    except Exception as e:
+        st.write(f"Error extracting entities: {e}")
+        return []
 
 # Define PubMed article types
 article_types = {
@@ -82,7 +95,7 @@ def save_to_excel(articles):
     output.seek(0)
     return output
 
-# Plot disease frequency using Matplotlib
+# Plot disease term frequency using Matplotlib
 def plot_disease_frequency(disease_list):
     if disease_list:
         disease_freq = Counter(disease_list)
