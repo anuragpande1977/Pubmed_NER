@@ -141,3 +141,4 @@ if st.button("Search"):
             st.write("No articles found.")
     else:
         st.write("Please provide both email and search term.")
+
