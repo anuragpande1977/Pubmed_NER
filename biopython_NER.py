@@ -4,141 +4,69 @@ import streamlit as st
 from Bio import Entrez, Medline
 from io import BytesIO
 import matplotlib.pyplot as plt
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
+import spacy
 from collections import Counter
-from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 
-# Load Hugging Face model for biomedical NER
-@st.cache_resource  # Cache the model to avoid reloading on every run
-def load_huggingface_model():
-    tokenizer = AutoTokenizer.from_pretrained("d4data/biomedical-ner-all")
-    model = AutoModelForTokenClassification.from_pretrained("d4data/biomedical-ner-all")
-    return pipeline("ner", model=model, tokenizer=tokenizer)
+# Function to ensure the model is installed and loaded
+def load_model():
+    try:
+        nlp = spacy.load("en_core_web_sm")
+    except OSError:
+        st.warning("Model not found. Installing en_core_web_sm...")
+        subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
+        nlp = spacy.load("en_core_web_sm")
+    return nlp
 
-ner_model = load_huggingface_model()
+# Load the spaCy model
+nlp = load_model()
 
-# Extract disease terms using Hugging Face NER model
-def extract_disease_terms(text):
-    entities = ner_model(text)
-    disease_terms = [entity['word'] for entity in entities if 'DISEASE' in entity['entity']]
-    return disease_terms
-
-# Define article types for PubMed search
-article_types = {
-    "Clinical Trials": "Clinical Trial[pt]",
-    "Meta-Analysis": "Meta-Analysis[pt]",
-    "Randomized Controlled Trials": "Randomized Controlled Trial[pt]",
-    "Reviews": "Review[pt]",
-    "Systematic Reviews": "Systematic Review[pt]",
-    "Case Reports": "Case Reports[pt]",
-    "Observational Studies": "Observational Study[pt]",
-}
-
-# Construct query for PubMed API
-def construct_query(search_term, mesh_term, article_type):
-    query = f"({search_term}) AND {article_types[article_type]}"
-    if mesh_term:
-        query += f" AND {mesh_term}[MeSH Terms]"
-    return query
+# Function to extract entities from text using spaCy
+def extract_entities(text):
+    doc = nlp(text)
+    return [ent.text for ent in doc.ents if ent.label_ == "DISEASE"]
 
 # Fetch articles from PubMed
 def fetch_abstracts(query, num_articles, email):
     Entrez.email = email
-    try:
-        handle = Entrez.esearch(db="pubmed", term=query, retmax=num_articles)
-        result = Entrez.read(handle)
-        ids = result['IdList']
-        handle.close()
+    handle = Entrez.esearch(db="pubmed", term=query, retmax=num_articles)
+    result = Entrez.read(handle)
+    ids = result['IdList']
+    handle.close()
 
-        if not ids:
-            st.write("No articles found.")
-            return []
-
-        handle = Entrez.efetch(db="pubmed", id=ids, rettype="medline", retmode="text")
-        records = Medline.parse(handle)
-        articles = list(records)
-        handle.close()
-        return articles
-    except Exception as e:
-        st.write(f"An error occurred: {e}")
+    if not ids:
+        st.write("No articles found.")
         return []
 
-# Save articles to Excel
+    handle = Entrez.efetch(db="pubmed", id=ids, rettype="medline", retmode="text")
+    records = Medline.parse(handle)
+    articles = list(records)
+    handle.close()
+    return articles
+
+# Create an Excel file in memory
 def save_to_excel(articles):
     output = BytesIO()
-    data = [
-        {
-            "Title": article.get("TI", "No Title"),
-            "Abstract": article.get("AB", "No Abstract"),
-            "Authors": ", ".join(article.get("AU", "No Authors")),
-            "Journal": article.get("TA", "No Journal"),
-            "Publication Date": article.get("DP", "No Date")
-        }
-        for article in articles
-    ]
-    df = pd.DataFrame(data)
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False)
+    data = [{'Title': art.get('TI', 'N/A'), 'Abstract': art.get('AB', 'N/A')} for art in articles]
+    pd.DataFrame(data).to_excel(output, index=False)
     output.seek(0)
     return output
 
-# Plot disease frequency bar chart
-def plot_disease_frequency(disease_list):
-    if disease_list:
-        disease_freq = Counter(disease_list)
-        df = pd.DataFrame(disease_freq.items(), columns=["Disease", "Frequency"])
-        df = df.sort_values(by="Frequency", ascending=False)
-
-        plt.figure(figsize=(10, 6))
-        plt.bar(df["Disease"], df["Frequency"])
-        plt.xticks(rotation=45, ha='right')
-        plt.xlabel("Disease")
-        plt.ylabel("Frequency")
-        plt.title("Disease Term Frequency in Abstracts")
-        plt.tight_layout()
-        st.pyplot(plt)
-    else:
-        st.write("No disease terms found.")
-
 # Streamlit UI
-st.title("PubMed NER Search and Disease Term Frequency")
+st.title("PubMed NER Search")
+email = st.text_input("Enter your email:")
+search_term = st.text_input("Search term:")
+num_articles = st.number_input("Number of articles:", 1, 100, 10)
 
-email = st.text_input("Enter your email for PubMed access:")
-search_term = st.text_input("Enter the search term:")
-mesh_term = st.text_input("Enter an optional MeSH term (leave blank if not needed):")
-article_type = st.selectbox("Select article type:", list(article_types.keys()))
-num_articles = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=10)
-
-if st.button("Search"):
+if st.button("Fetch and Analyze"):
     if email and search_term:
-        query = construct_query(search_term, mesh_term, article_type)
-        articles = fetch_abstracts(query, num_articles, email)
-
+        articles = fetch_abstracts(search_term, num_articles, email)
         if articles:
-            # Save results to Excel
-            excel_data = save_to_excel(articles)
-            st.download_button(
-                label="Download Results as Excel",
-                data=excel_data,
-                file_name="pubmed_results.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-
-            # Extract and display disease terms
-            st.write("### Extracted Disease Terms from Abstracts:")
-            all_disease_terms = []
+            st.download_button("Download Results", save_to_excel(articles), "results.xlsx")
             for article in articles:
                 abstract = article.get('AB', '')
-                disease_terms = extract_disease_terms(abstract)
-                if disease_terms:
-                    st.write(f"Title: {article.get('TI', 'No Title')}")
-                    st.write(f"Disease Terms: {', '.join(disease_terms)}")
-                    all_disease_terms.extend(disease_terms)
-
-            # Plot disease term frequency
-            if all_disease_terms:
-                st.write("### Disease Term Frequency:")
-                plot_disease_frequency(all_disease_terms)
+                diseases = extract_entities(abstract)
+                st.write(f"Diseases: {', '.join(diseases) if diseases else 'None'}")
         else:
-            st.write("No articles found.")
-    else:
-        st.write("Please provide both email and search term.")
+            st.write("No results found.")
