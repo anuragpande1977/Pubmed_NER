@@ -7,22 +7,22 @@ import matplotlib.pyplot as plt
 from collections import Counter
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 
-# Load Hugging Face model for biomedical NER
+# Load Hugging Face model (SciBERT) for biomedical NER
 @st.cache_resource
 def load_huggingface_model():
-    tokenizer = AutoTokenizer.from_pretrained("d4data/biomedical-ner-all")
-    model = AutoModelForTokenClassification.from_pretrained("d4data/biomedical-ner-all")
+    tokenizer = AutoTokenizer.from_pretrained("allenai/scibert_scivocab_uncased")
+    model = AutoModelForTokenClassification.from_pretrained("allenai/scibert_scivocab_uncased")
     return pipeline("ner", model=model, tokenizer=tokenizer)
 
 ner_model = load_huggingface_model()
 
-# Extract disease-related entities from text
+# Extract entities from text using the NER model
 def extract_entities(text):
     entities = ner_model(text)
-    extracted_terms = [entity['word'] for entity in entities if 'DISEASE' in entity['entity']]
+    extracted_terms = [entity['word'] for entity in entities]
     return extracted_terms
 
-# Define article types for PubMed search
+# Define PubMed article types
 article_types = {
     "Clinical Trials": "Clinical Trial[pt]",
     "Meta-Analysis": "Meta-Analysis[pt]",
@@ -33,14 +33,14 @@ article_types = {
     "Observational Studies": "Observational Study[pt]",
 }
 
-# Construct query for PubMed search
+# Construct PubMed query
 def construct_query(search_term, mesh_term, article_type):
     query = f"({search_term}) AND {article_types[article_type]}"
     if mesh_term:
         query += f" AND {mesh_term}[MeSH Terms]"
     return query
 
-# Fetch articles from PubMed
+# Fetch abstracts from PubMed
 def fetch_abstracts(query, num_articles, email):
     Entrez.email = email
     try:
@@ -63,7 +63,7 @@ def fetch_abstracts(query, num_articles, email):
         st.write(f"An error occurred: {e}")
         return []
 
-# Save articles to Excel
+# Save abstracts to Excel
 def save_to_excel(articles):
     output = BytesIO()
     data = [
@@ -82,7 +82,7 @@ def save_to_excel(articles):
     output.seek(0)
     return output
 
-# Plot disease term frequency using Matplotlib
+# Plot disease frequency using Matplotlib
 def plot_disease_frequency(disease_list):
     if disease_list:
         disease_freq = Counter(disease_list)
@@ -124,7 +124,7 @@ if st.button("Search"):
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-            # Extract and aggregate disease terms
+            # Extract and aggregate entities
             all_entities = []
             for article in articles:
                 abstract = article.get('AB', '')
