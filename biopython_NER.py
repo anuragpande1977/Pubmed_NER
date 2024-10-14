@@ -7,31 +7,28 @@ import matplotlib.pyplot as plt
 from collections import Counter
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 
-# Load Hugging Face model for biomedical NER
+# Load SciBERT model from Hugging Face for biomedical NER
 @st.cache_resource
 def load_huggingface_model():
-    tokenizer = AutoTokenizer.from_pretrained("d4data/biomedical-ner-all")
-    model = AutoModelForTokenClassification.from_pretrained("d4data/biomedical-ner-all")
-    return pipeline("ner", model=model, tokenizer=tokenizer, batch_size=1)
+    tokenizer = AutoTokenizer.from_pretrained("allenai/scibert_scivocab_cased")
+    model = AutoModelForTokenClassification.from_pretrained("nlpie/bio-ner")
+    return pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
 
 ner_model = load_huggingface_model()
 
-# Split text into smaller chunks to avoid token limits
+# Split long text into smaller chunks for processing
 def split_text(text, max_len=512):
     words = text.split()
     for i in range(0, len(words), max_len):
         yield " ".join(words[i:i + max_len])
 
-# Extract disease-related terms from text
+# Extract disease-related entities from text
 def extract_entities(text):
     extracted_terms = []
     try:
         for chunk in split_text(text):
             entities = ner_model(chunk)
-            terms = [
-                entity['word'] for entity in entities 
-                if any(label in entity['entity'] for label in ['DISEASE', 'B-DISEASE', 'I-DISEASE'])
-            ]
+            terms = [entity['word'] for entity in entities if 'Disease' in entity['entity_group']]
             extracted_terms.extend(terms)
     except Exception as e:
         st.write(f"Error during NER extraction: {e}")
@@ -55,7 +52,7 @@ def construct_query(search_term, mesh_term, article_type):
         query += f" AND {mesh_term}[MeSH Terms]"
     return query
 
-# Fetch articles from PubMed
+# Fetch abstracts from PubMed
 def fetch_abstracts(query, num_articles, email):
     Entrez.email = email
     try:
@@ -73,7 +70,6 @@ def fetch_abstracts(query, num_articles, email):
         articles = list(records)
         handle.close()
         return articles
-
     except Exception as e:
         st.write(f"An error occurred: {e}")
         return []
@@ -156,3 +152,4 @@ if st.button("Search"):
             st.write("No articles found.")
     else:
         st.write("Please provide both email and search term.")
+
