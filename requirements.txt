@@ -1,15 +1,8 @@
-setuptools>=58.0.0
-wheel>=0.38.0
-streamlit>=1.10.0
-numpy>=1.26.0
-pyarrow>=13.0.0
-biopython>=1.78
-scipy>=1.10.0  # Add pre-built version of SciPy to avoid Fortran compilation
-scispacy>=0.5.0
-spacy>=3.0.0
-matplotlib>=3.5.0
-plotly>=5.0.0
-pandas>=1.3.0
-altair>=4.2.0
-aiohttp>=3.7.0
-pip>=24.2
+streamlit
+pandas
+biopython
+matplotlib
+plotly
+scispacy
+spacy
+en-ner-bc5cdr-md @ https://github.com/allenai/scispacy-models/releases/download/en_ner_bc5cdr_md-0.5.0/en_ner_bc5cdr_md-0.5.0.tar.gz
