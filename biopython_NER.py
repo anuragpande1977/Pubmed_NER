@@ -16,11 +16,11 @@ def load_huggingface_model():
 
 ner_model = load_huggingface_model()
 
-# Function to extract and print all entities for debugging
+# Extract disease-related entities from text
 def extract_entities(text):
     entities = ner_model(text)
-    st.write("Debug: NER Output", entities)  # Print all detected entities
-    return [entity['word'] for entity in entities]
+    extracted_terms = [entity['word'] for entity in entities if 'DISEASE' in entity['entity']]
+    return extracted_terms
 
 # Define article types for PubMed search
 article_types = {
@@ -33,7 +33,7 @@ article_types = {
     "Observational Studies": "Observational Study[pt]",
 }
 
-# PubMed query construction
+# Construct query for PubMed search
 def construct_query(search_term, mesh_term, article_type):
     query = f"({search_term}) AND {article_types[article_type]}"
     if mesh_term:
@@ -82,7 +82,7 @@ def save_to_excel(articles):
     output.seek(0)
     return output
 
-# Plot disease frequency
+# Plot disease term frequency using Matplotlib
 def plot_disease_frequency(disease_list):
     if disease_list:
         disease_freq = Counter(disease_list)
@@ -92,7 +92,7 @@ def plot_disease_frequency(disease_list):
         plt.figure(figsize=(10, 6))
         plt.bar(df["Disease"], df["Frequency"])
         plt.xticks(rotation=45, ha='right')
-        plt.xlabel("Disease")
+        plt.xlabel("Disease Terms")
         plt.ylabel("Frequency")
         plt.title("Disease Term Frequency in Abstracts")
         plt.tight_layout()
@@ -100,8 +100,8 @@ def plot_disease_frequency(disease_list):
     else:
         st.write("No disease terms found.")
 
-# Streamlit UI
-st.title("PubMed Biomedical NER Search and Disease Term Frequency")
+# Streamlit User Interface
+st.title("PubMed NER Search and Disease Term Frequency")
 
 email = st.text_input("Enter your email for PubMed access:")
 search_term = st.text_input("Enter the search term:")
@@ -124,21 +124,19 @@ if st.button("Search"):
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-            # Extract and display disease terms
-            st.write("### Extracted Entities from Abstracts:")
+            # Extract and aggregate disease terms
             all_entities = []
             for article in articles:
                 abstract = article.get('AB', '')
                 entities = extract_entities(abstract)
-                if entities:
-                    st.write(f"Title: {article.get('TI', 'No Title')}")
-                    st.write(f"Entities: {', '.join(entities)}")
-                    all_entities.extend(entities)
+                all_entities.extend(entities)
 
-            # Plot disease term frequency
+            # Plot frequency of disease terms
             if all_entities:
                 st.write("### Disease Term Frequency:")
                 plot_disease_frequency(all_entities)
+            else:
+                st.write("No disease terms found.")
         else:
             st.write("No articles found.")
     else:
