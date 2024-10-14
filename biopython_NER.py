@@ -6,36 +6,23 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 from collections import Counter
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
-import torch
 
-# Load Hugging Face SciBERT model with caching and device compatibility
+# Load Hugging Face model for biomedical NER
 @st.cache_resource
 def load_huggingface_model():
-    device = 0 if torch.cuda.is_available() else -1  # Use GPU if available, otherwise CPU
-    tokenizer = AutoTokenizer.from_pretrained("allenai/scibert_scivocab_uncased")
-    model = AutoModelForTokenClassification.from_pretrained("allenai/scibert_scivocab_uncased")
-    return pipeline("ner", model=model, tokenizer=tokenizer, device=device)
+    tokenizer = AutoTokenizer.from_pretrained("d4data/biomedical-ner-all")
+    model = AutoModelForTokenClassification.from_pretrained("d4data/biomedical-ner-all")
+    return pipeline("ner", model=model, tokenizer=tokenizer)
 
 ner_model = load_huggingface_model()
 
-# Truncate text to fit within token limit (512 tokens)
-def truncate_text(text, max_tokens=512):
-    tokens = text.split()
-    if len(tokens) > max_tokens:
-        return ' '.join(tokens[:max_tokens])
-    return text
-
-# Extract biomedical entities from text using the Hugging Face model
+# Extract disease-related entities from text
 def extract_entities(text):
-    try:
-        truncated_text = truncate_text(text)
-        entities = ner_model(truncated_text)
-        return [entity['word'] for entity in entities]
-    except Exception as e:
-        st.write(f"Error extracting entities: {e}")
-        return []
+    entities = ner_model(text)
+    extracted_terms = [entity['word'] for entity in entities if 'DISEASE' in entity['entity']]
+    return extracted_terms
 
-# Define PubMed article types
+# Define article types for PubMed search
 article_types = {
     "Clinical Trials": "Clinical Trial[pt]",
     "Meta-Analysis": "Meta-Analysis[pt]",
@@ -46,14 +33,14 @@ article_types = {
     "Observational Studies": "Observational Study[pt]",
 }
 
-# Construct PubMed query
+# Construct query for PubMed search
 def construct_query(search_term, mesh_term, article_type):
     query = f"({search_term}) AND {article_types[article_type]}"
     if mesh_term:
         query += f" AND {mesh_term}[MeSH Terms]"
     return query
 
-# Fetch abstracts from PubMed
+# Fetch articles from PubMed
 def fetch_abstracts(query, num_articles, email):
     Entrez.email = email
     try:
@@ -76,7 +63,7 @@ def fetch_abstracts(query, num_articles, email):
         st.write(f"An error occurred: {e}")
         return []
 
-# Save abstracts to Excel
+# Save articles to Excel
 def save_to_excel(articles):
     output = BytesIO()
     data = [
@@ -95,26 +82,26 @@ def save_to_excel(articles):
     output.seek(0)
     return output
 
-# Plot disease term frequency using Matplotlib
-def plot_disease_frequency(disease_list):
+# Plot top 15 disease terms by frequency
+def plot_top_disease_frequency(disease_list):
     if disease_list:
         disease_freq = Counter(disease_list)
-        df = pd.DataFrame(disease_freq.items(), columns=["Disease", "Frequency"])
-        df = df.sort_values(by="Frequency", ascending=False)
+        top_15 = disease_freq.most_common(15)  # Get the top 15 most common diseases
+        df = pd.DataFrame(top_15, columns=["Disease", "Frequency"])
 
         plt.figure(figsize=(10, 6))
         plt.bar(df["Disease"], df["Frequency"])
         plt.xticks(rotation=45, ha='right')
         plt.xlabel("Disease Terms")
         plt.ylabel("Frequency")
-        plt.title("Disease Term Frequency in Abstracts")
+        plt.title("Top 15 Disease Terms in Abstracts")
         plt.tight_layout()
         st.pyplot(plt)
     else:
         st.write("No disease terms found.")
 
 # Streamlit User Interface
-st.title("PubMed NER Search and Disease Term Frequency")
+st.title("PubMed NER Search and Top 15 Disease Term Frequency")
 
 email = st.text_input("Enter your email for PubMed access:")
 search_term = st.text_input("Enter the search term:")
@@ -137,17 +124,17 @@ if st.button("Search"):
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-            # Extract and aggregate entities
+            # Extract and aggregate disease terms
             all_entities = []
             for article in articles:
                 abstract = article.get('AB', '')
                 entities = extract_entities(abstract)
                 all_entities.extend(entities)
 
-            # Plot frequency of disease terms
+            # Plot top 15 disease terms
             if all_entities:
-                st.write("### Disease Term Frequency:")
-                plot_disease_frequency(all_entities)
+                st.write("### Top 15 Disease Term Frequency:")
+                plot_top_disease_frequency(all_entities)
             else:
                 st.write("No disease terms found.")
         else:
