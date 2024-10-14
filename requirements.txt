@@ -3,5 +3,6 @@ pandas
 biopython
 matplotlib
 plotly
-spacy
+transformers
+torch
 openpyxl
