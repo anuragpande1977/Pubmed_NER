@@ -1,8 +1,7 @@
 transformers==4.29.2
 torch>=2.0.0
-tokenizers==0.13.2
+tokenizers==0.13.3
 biopython
 streamlit
 openpyxl
 matplotlib
-tokenizers==0.13.2 --no-binary=tokenizers
