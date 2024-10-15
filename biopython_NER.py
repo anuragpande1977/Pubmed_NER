@@ -7,50 +7,27 @@ import matplotlib.pyplot as plt
 from collections import Counter
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 
-# Load Hugging Face model for biomedical NER
+# Load a more specialized Hugging Face NER model for scientific text
 @st.cache_resource
 def load_huggingface_model():
-    tokenizer = AutoTokenizer.from_pretrained("d4data/biomedical-ner-all")
+    tokenizer = AutoTokenizer.from_pretrained("allenai/scibert_scivocab_cased")
     model = AutoModelForTokenClassification.from_pretrained("d4data/biomedical-ner-all")
-    return pipeline("ner", model=model, tokenizer=tokenizer, batch_size=1)
+    return pipeline("ner", model=model, tokenizer=tokenizer)
 
 ner_model = load_huggingface_model()
 
-# Split text into smaller chunks to avoid token limits
-def split_text(text, max_len=512):
-    words = text.split()
-    for i in range(0, len(words), max_len):
-        yield " ".join(words[i:i + max_len])
-
-# Extract disease-related terms from text
+# Extract disease-related entities
 def extract_entities(text):
-    extracted_terms = []
-    try:
-        for chunk in split_text(text):
-            entities = ner_model(chunk)
-            terms = [
-                entity['word'] for entity in entities 
-                if any(label in entity['entity'] for label in ['DISEASE', 'B-DISEASE', 'I-DISEASE'])
-            ]
-            extracted_terms.extend(terms)
-    except Exception as e:
-        st.write(f"Error during NER extraction: {e}")
+    entities = ner_model(text)
+    extracted_terms = [
+        entity['word'] for entity in entities 
+        if any(label in entity['entity'] for label in ['DISEASE', 'B-DISEASE', 'I-DISEASE'])
+    ]
     return extracted_terms
 
-# Define article types for PubMed search
-article_types = {
-    "Clinical Trials": "Clinical Trial[pt]",
-    "Meta-Analysis": "Meta-Analysis[pt]",
-    "Randomized Controlled Trials": "Randomized Controlled Trial[pt]",
-    "Reviews": "Review[pt]",
-    "Systematic Reviews": "Systematic Review[pt]",
-    "Case Reports": "Case Reports[pt]",
-    "Observational Studies": "Observational Study[pt]",
-}
-
-# Construct query for PubMed search
+# PubMed query construction
 def construct_query(search_term, mesh_term, article_type):
-    query = f"({search_term}) AND {article_types[article_type]}"
+    query = f"({search_term}) AND {article_type}[pt]"
     if mesh_term:
         query += f" AND {mesh_term}[MeSH Terms]"
     return query
@@ -121,7 +98,7 @@ st.title("PubMed NER Search and Top 15 Disease Term Frequency")
 email = st.text_input("Enter your email for PubMed access:")
 search_term = st.text_input("Enter the search term:")
 mesh_term = st.text_input("Enter an optional MeSH term (leave blank if not needed):")
-article_type = st.selectbox("Select article type:", list(article_types.keys()))
+article_type = st.selectbox("Select article type:", ["Clinical Trial", "Review", "Meta-Analysis", "Case Report"])
 num_articles = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=10)
 
 if st.button("Search"):
