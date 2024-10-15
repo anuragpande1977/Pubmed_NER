@@ -1,6 +1,7 @@
-transformers==4.33.2
-tokenizers==0.13.3 --prefer-binary
+-c constraints.txt
+transformers==4.30.2
 pandas==1.5.3
 streamlit==1.26.0
 biopython==1.81
 matplotlib==3.7.2
+
