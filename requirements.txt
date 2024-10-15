@@ -1,9 +1,8 @@
-os
 pandas
 streamlit
 biopython
 matplotlib
 plotly
 scispacy
-spacy
+spacy==3.5.0
 openpyxl
