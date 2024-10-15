@@ -5,3 +5,4 @@ biopython
 streamlit
 openpyxl
 matplotlib
+
