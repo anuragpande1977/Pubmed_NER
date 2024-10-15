@@ -89,7 +89,7 @@ neo4j==5.17.0
 nest-asyncio==1.6.0
 networkx==2.6.3
 nmslib==2.1.1
-numpy==1.21.6
+numpy==1.20.3
 oauthlib==3.2.2
 openai==0.28.0
 openpyxl==3.1.2
