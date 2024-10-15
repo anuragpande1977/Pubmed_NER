@@ -9,6 +9,10 @@ from plotly.subplots import make_subplots
 import scispacy
 import spacy
 from collections import Counter
+import subprocess
+import sys
+
+subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
 
 # Load the scispacy model for extracting disease terms
 nlp = spacy.load("en_ner_bc5cdr_md")
