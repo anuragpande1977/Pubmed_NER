@@ -5,3 +5,4 @@ biopython
 streamlit
 openpyxl
 matplotlib
+tokenizers==0.13.2 --no-binary=tokenizers
