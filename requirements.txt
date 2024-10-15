@@ -1,7 +1,6 @@
-transformers==4.29.2
-torch>=2.0.0
-tokenizers==0.13.3
-biopython
-streamlit
-openpyxl
-matplotlib
+transformers==4.33.2
+tokenizers==0.13.3 --prefer-binary
+pandas==1.5.3
+streamlit==1.26.0
+biopython==1.81
+matplotlib==3.7.2
