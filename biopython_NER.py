@@ -6,13 +6,18 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 from collections import Counter
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
+import re
+
+# Email validation function
+def is_valid_email(email):
+    return re.match(r"[^@]+@[^@]+\.[^@]+", email)
 
 # Load a more specialized Hugging Face NER model for scientific text
 @st.cache_resource
 def load_huggingface_model():
     tokenizer = AutoTokenizer.from_pretrained("allenai/scibert_scivocab_cased")
     model = AutoModelForTokenClassification.from_pretrained("d4data/biomedical-ner-all")
-    return pipeline("ner", model=model, tokenizer=tokenizer)
+    return pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
 
 ner_model = load_huggingface_model()
 
@@ -32,23 +37,26 @@ def construct_query(search_term, mesh_term, article_type):
         query += f" AND {mesh_term}[MeSH Terms]"
     return query
 
-# Fetch articles from PubMed
+# Fetch articles from PubMed with pagination support
 def fetch_abstracts(query, num_articles, email):
     Entrez.email = email
+    articles = []
     try:
-        handle = Entrez.esearch(db="pubmed", term=query, retmax=num_articles)
-        result = Entrez.read(handle)
-        ids = result['IdList']
-        handle.close()
+        batch_size = 100
+        for start in range(0, num_articles, batch_size):
+            handle = Entrez.esearch(
+                db="pubmed", term=query, retstart=start, retmax=batch_size
+            )
+            result = Entrez.read(handle)
+            ids = result['IdList']
+            handle.close()
 
-        if not ids:
-            st.write("No articles found.")
-            return []
+            if ids:
+                handle = Entrez.efetch(db="pubmed", id=ids, rettype="medline", retmode="text")
+                records = Medline.parse(handle)
+                articles.extend(records)
+                handle.close()
 
-        handle = Entrez.efetch(db="pubmed", id=ids, rettype="medline", retmode="text")
-        records = Medline.parse(handle)
-        articles = list(records)
-        handle.close()
         return articles
 
     except Exception as e:
@@ -74,15 +82,18 @@ def save_to_excel(articles):
     output.seek(0)
     return output
 
-# Plot top 15 disease terms by frequency
+# Plot top 15 disease terms by frequency with improved aesthetics
 def plot_top_disease_frequency(disease_list):
     if disease_list:
         disease_freq = Counter(disease_list)
-        top_15 = disease_freq.most_common(15)  # Get the top 15 most common diseases
+        top_15 = disease_freq.most_common(15)
         df = pd.DataFrame(top_15, columns=["Disease", "Frequency"])
 
         plt.figure(figsize=(10, 6))
-        plt.bar(df["Disease"], df["Frequency"])
+        bars = plt.bar(
+            df["Disease"], df["Frequency"], 
+            color=plt.cm.viridis(df["Frequency"] / max(df["Frequency"]))
+        )
         plt.xticks(rotation=45, ha='right')
         plt.xlabel("Disease Terms")
         plt.ylabel("Frequency")
@@ -99,15 +110,19 @@ email = st.text_input("Enter your email for PubMed access:")
 search_term = st.text_input("Enter the search term:")
 mesh_term = st.text_input("Enter an optional MeSH term (leave blank if not needed):")
 article_type = st.selectbox("Select article type:", ["Clinical Trial", "Review", "Meta-Analysis", "Case Report"])
-num_articles = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=10)
+num_articles = st.number_input("Number of articles to fetch:", min_value=1, max_value=500, value=10)
 
 if st.button("Search"):
-    if email and search_term:
+    if not is_valid_email(email):
+        st.write("Please enter a valid email address.")
+    elif not search_term:
+        st.write("Search term cannot be empty.")
+    else:
         query = construct_query(search_term, mesh_term, article_type)
-        articles = fetch_abstracts(query, num_articles, email)
+        with st.spinner("Fetching articles..."):
+            articles = fetch_abstracts(query, num_articles, email)
 
         if articles:
-            # Save results to Excel
             excel_data = save_to_excel(articles)
             st.download_button(
                 label="Download Results as Excel",
@@ -116,14 +131,12 @@ if st.button("Search"):
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-            # Extract and aggregate disease terms
             all_entities = []
             for article in articles:
                 abstract = article.get('AB', '')
                 entities = extract_entities(abstract)
                 all_entities.extend(entities)
 
-            # Plot top 15 disease terms
             if all_entities:
                 st.write("### Top 15 Disease Term Frequency:")
                 plot_top_disease_frequency(all_entities)
@@ -131,5 +144,4 @@ if st.button("Search"):
                 st.write("No disease terms found.")
         else:
             st.write("No articles found.")
-    else:
-        st.write("Please provide both email and search term.")
+
