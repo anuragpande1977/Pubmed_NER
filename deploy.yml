@@ -17,6 +17,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install --prefer-binary -r requirements.txt
+          pip install --prefer-binary -r requirements.txt --extra-index-url https://pypi.org/simple/
       - name: Run Streamlit
         run: streamlit run your_script.py --server.port ${{ secrets.PORT }}
