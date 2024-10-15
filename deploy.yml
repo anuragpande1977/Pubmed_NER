@@ -1,32 +1,22 @@
-name: Streamlit App Deploy
+name: Streamlit App Deployment
 
 on:
   push:
     branches:
-      - main  # Trigger on pushes to the main branch
+      - main
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest  # Use the latest Ubuntu runner
-
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2  # Check out the repository code
-
+      - uses: actions/checkout@v2
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.9'  # Use Python 3.9 for compatibility with tokenizers
-
-      - name: Install required system dependencies
+          python-version: 3.8
+      - name: Install Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential python3-dev  # Install build tools
-
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip setuptools wheel  # Upgrade essential tools
-          pip install -r requirements.txt --no-binary=tokenizers --no-cache-dir  # Install with options
-
-      - name: Run Streamlit App
-        run: streamlit run app.py --server.headless true  # Ensure Streamlit runs headlessly
+          python -m pip install --upgrade pip setuptools wheel
+          pip install --prefer-binary -r requirements.txt
+      - name: Run Streamlit
+        run: streamlit run your_script.py --server.port ${{ secrets.PORT }}
