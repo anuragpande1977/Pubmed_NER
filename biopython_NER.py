@@ -13,6 +13,35 @@ import subprocess
 import sys
 import streamlit as st
 import streamlit.components.v1 as components
+import streamlit as st
+import streamlit.components.v1 as components
+
+# Google Analytics Script
+ga_script = """
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JR76W8BFHL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-JR76W8BFHL');
+</script>
+"""
+
+# Inject the script into the app
+components.html(
+    f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+    {ga_script}
+    </head>
+    <body>
+    </body>
+    </html>
+    """,
+    height=0  # Keeps it hidden but executed
+)
 
 # Google Tag Manager Script
 gtm_script = """
