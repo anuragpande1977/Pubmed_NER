@@ -11,6 +11,33 @@ import spacy
 from collections import Counter
 import subprocess
 import sys
+import streamlit as st
+import streamlit.components.v1 as components
+
+# Google Tag Manager Script
+gtm_script = """
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JR76W8BFHL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-JR76W8BFHL');
+</script>
+"""
+
+# Inject the GTM script into the app
+components.html(
+    f"""
+    <html>
+    <head>
+    {gtm_script}
+    </head>
+    </html>
+    """,
+    height=0,  # Keeps the added HTML invisible
+)
 
 subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
 
